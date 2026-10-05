@@ -70,3 +70,19 @@ def get_task_by_id(task_id):
         return row_to_task(row) if row else None
     finally:
         conn.close()
+
+def insert_task(title):
+    conn = get_connection()
+    try:
+        cursor = conn.execute(
+            "INSERT INTO tasks (title, done) VALUES (?, ?)",
+            (title, 0),
+        )
+        conn.commit()
+        new_id = cursor.lastrowid
+    finally:
+        conn.close()
+    return get_task_by_id(new_id)
+
+
+

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from db import init_db
+from db import init_db, get_all_tasks, get_task_by_id
 
 init_db()
 app = FastAPI(
@@ -47,9 +47,9 @@ def health_check():
     return {"status": "ok"}
 
 
-@app.get("/tasks", summary="List all tasks", description="Returns every task in the in-memory list.")
+@app.get("/tasks", summary="List all tasks", description="Returns every task in the database.")
 def list_tasks():
-    return tasks
+    return get_all_tasks()
 
 
 @app.get(
@@ -59,11 +59,11 @@ def list_tasks():
     responses={404: {"description": "Task not found"}},
 )
 def get_task(task_id: int):
-    task = find_task(task_id)
+    task = get_task_by_id(task_id)
     if task is None:
         return JSONResponse(
             status_code=404,
-            content={"error": f"Task {task_id} not found"},
+            content={"error": "Task not found"},
         )
     return task
 

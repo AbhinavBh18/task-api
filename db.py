@@ -40,3 +40,33 @@ def init_db():
         conn.commit()
     finally:
         conn.close()
+
+
+
+def row_to_task(row):
+    # SQLite stores done as 0/1; the API should keep returning true/false
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "done": bool(row["done"]),
+    }
+
+
+def get_all_tasks():
+    conn = get_connection()
+    try:
+        rows = conn.execute("SELECT * FROM tasks").fetchall()
+        return [row_to_task(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def get_task_by_id(task_id):
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            "SELECT * FROM tasks WHERE id = ?", (task_id,)
+        ).fetchone()
+        return row_to_task(row) if row else None
+    finally:
+        conn.close()

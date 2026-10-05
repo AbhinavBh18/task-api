@@ -1,21 +1,14 @@
 from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from db import init_db, get_all_tasks, get_task_by_id, insert_task
+from db import init_db, get_all_tasks, get_task_by_id, insert_task, update_task_row, delete_task_row
 
 init_db()
 app = FastAPI(
     title="Task API",
-    description="A small to-do list API with full CRUD, stored in memory.",
+    description="A small to-do list API with full CRUD, stored in a SQLite database.",
     version="1.0",
 )
-
-tasks = [
-    {"id": 1, "title": "Learn HTTP basics", "done": True},
-    {"id": 2, "title": "Build a CRUD API", "done": False},
-    {"id": 3, "title": "Publish to GitHub", "done": False},
-]
-
 
 class TaskCreate(BaseModel):
     title: str | None = None
@@ -24,13 +17,6 @@ class TaskCreate(BaseModel):
 class TaskUpdate(BaseModel):
     title: str | None = None
     done: bool | None = None
-
-
-def find_task(task_id: int):
-    for task in tasks:
-        if task["id"] == task_id:
-            return task
-    return None
 
 
 @app.get("/", summary="API info", description="Describes this API and lists its main endpoints.")
@@ -72,7 +58,7 @@ def get_task(task_id: int):
     "/tasks",
     status_code=201,
     summary="Create a task",
-    description="Creates a task from a title. The server assigns the id and sets done to false.",
+    description="Creates a task from a title. The database assigns the id and done starts as false.",
     responses={400: {"description": "Title missing or empty"}},
 )
 def create_task(body: TaskCreate):
@@ -95,7 +81,7 @@ def create_task(body: TaskCreate):
     },
 )
 def update_task(task_id: int, body: TaskUpdate):
-    task = find_task(task_id)
+    task = get_task_by_id(task_id)
     if task is None:
         return JSONResponse(
             status_code=404,
@@ -108,18 +94,16 @@ def update_task(task_id: int, body: TaskUpdate):
             content={"error": "provide title and/or done"},
         )
 
-    if body.title is not None:
-        if body.title.strip() == "":
-            return JSONResponse(
-                status_code=400,
-                content={"error": "title cannot be empty"},
-            )
-        task["title"] = body.title.strip()
+    if body.title is not None and body.title.strip() == "":
+        return JSONResponse(
+            status_code=400,
+            content={"error": "title cannot be empty"},
+        )
 
-    if body.done is not None:
-        task["done"] = body.done
+    new_title = body.title.strip() if body.title is not None else task["title"]
+    new_done = body.done if body.done is not None else task["done"]
 
-    return task
+    return update_task_row(task_id, new_title, new_done)
 
 
 @app.delete(
@@ -130,11 +114,11 @@ def update_task(task_id: int, body: TaskUpdate):
     responses={404: {"description": "Task not found"}},
 )
 def delete_task(task_id: int):
-    task = find_task(task_id)
-    if task is None:
+    if not delete_task_row(task_id):
         return JSONResponse(
             status_code=404,
-            content={"error": f"Task {task_id} not found"},
+            content={"error": "Task not found"},
         )
-    tasks.remove(task)
     return Response(status_code=204)
+
+

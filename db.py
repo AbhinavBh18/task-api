@@ -86,3 +86,24 @@ def insert_task(title):
 
 
 
+def update_task_row(task_id, title, done):
+    conn = get_connection()
+    try:
+        conn.execute(
+            "UPDATE tasks SET title = ?, done = ? WHERE id = ?",
+            (title, 1 if done else 0, task_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    return get_task_by_id(task_id)
+
+
+def delete_task_row(task_id):
+    conn = get_connection()
+    try:
+        cursor = conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()

@@ -1,7 +1,9 @@
 from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from db import init_db
 
+init_db()
 app = FastAPI(
     title="Task API",
     description="A small to-do list API with full CRUD, stored in memory.",

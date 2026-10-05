@@ -11,7 +11,7 @@ Built for the FlyRank Internship, Backend Track, Week 2 (Assignment A1).
 ## Install and run
 
 ```bash
-git clone <your-repo-url>
+git clone <https://github.com/AbhinavBh18/task-api>
 cd task-api
 python -m venv venv
 ```

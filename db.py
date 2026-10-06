@@ -61,39 +61,29 @@ def get_task_by_id(task_id):
         ).fetchone()
         return row_to_task(row) if row else None
 
+
 def insert_task(title):
-    conn = get_connection()
-    try:
-        cursor = conn.execute(
-            "INSERT INTO tasks (title, done) VALUES (?, ?)",
-            (title, 0),
-        )
-        conn.commit()
-        new_id = cursor.lastrowid
-    finally:
-        conn.close()
-    return get_task_by_id(new_id)
+    with get_connection() as conn:
+        row = conn.execute(
+            "INSERT INTO tasks (title, done) VALUES (%s, %s) RETURNING *",
+            (title, False),
+        ).fetchone()
+        return row_to_task(row)
 
 
 
 def update_task_row(task_id, title, done):
-    conn = get_connection()
-    try:
-        conn.execute(
-            "UPDATE tasks SET title = ?, done = ? WHERE id = ?",
-            (title, 1 if done else 0, task_id),
-        )
-        conn.commit()
-    finally:
-        conn.close()
-    return get_task_by_id(task_id)
+    with get_connection() as conn:
+        row = conn.execute(
+            "UPDATE tasks SET title = %s, done = %s WHERE id = %s RETURNING *",
+            (title, done, task_id),
+        ).fetchone()
+        return row_to_task(row) if row else None
 
 
 def delete_task_row(task_id):
-    conn = get_connection()
-    try:
-        cursor = conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
-        conn.commit()
+    with get_connection() as conn:
+        cursor = conn.execute("DELETE FROM tasks WHERE id = %s", (task_id,))
         return cursor.rowcount > 0
-    finally:
-        conn.close()
+
+    

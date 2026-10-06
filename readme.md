@@ -16,6 +16,17 @@ cd task-api
 python -m venv venv
 ```
 
+Start Postgres in Docker:
+
+```
+docker run --name taskdb -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=tasks -p 5432:5432 -v taskdata:/var/lib/postgresql/data -d postgres:16
+```
+
+Open a SQL prompt inside it:
+
+```
+docker exec -it taskdb psql -U postgres -d tasks
+```
 Activate the virtual environment:
 
 - Windows (PowerShell): `venv\Scripts\activate`

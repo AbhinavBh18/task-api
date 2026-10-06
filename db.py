@@ -1,47 +1,46 @@
-import sqlite3
+import os
 from pathlib import Path
 
-# tasks.db lives next to this file, no matter where you launch the server from
-DB_FILE = Path(__file__).parent / "tasks.db"
+import psycopg
+from dotenv import load_dotenv
+from psycopg.rows import dict_row
+
+# read DATABASE_URL from the .env file next to this file
+load_dotenv(Path(__file__).parent / ".env")
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 SEED_TASKS = [
-    ("Learn HTTP basics", 1),
-    ("Build a CRUD API", 0),
-    ("Publish to GitHub", 0),
+    ("Learn HTTP basics", True),
+    ("Build a CRUD API", False),
+    ("Publish to GitHub", False),
 ]
 
 
 def get_connection():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row  # lets us read columns by name
-    return conn
+    # dict_row lets us read columns by name, like sqlite3.Row did
+    return psycopg.connect(DATABASE_URL, row_factory=dict_row)
 
 
 def init_db():
-    conn = get_connection()
-    try:
+    # "with" commits on success and closes the connection at the end
+    with get_connection() as conn:
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS tasks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
-                done INTEGER NOT NULL DEFAULT 0
+                done BOOLEAN NOT NULL DEFAULT FALSE
             )
             """
         )
 
-        count = conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
+        count = conn.execute("SELECT COUNT(*) AS n FROM tasks").fetchone()["n"]
         if count == 0:
-            conn.executemany(
-                "INSERT INTO tasks (title, done) VALUES (?, ?)",
-                SEED_TASKS,
-            )
-
-        conn.commit()
-    finally:
-        conn.close()
-
-
+            with conn.cursor() as cur:
+                cur.executemany(
+                    "INSERT INTO tasks (title, done) VALUES (%s, %s)",
+                    SEED_TASKS,
+                )
 
 def row_to_task(row):
     # SQLite stores done as 0/1; the API should keep returning true/false

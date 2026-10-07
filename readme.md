@@ -2,8 +2,7 @@
 
 A small to-do list API built with Python and FastAPI. It supports full CRUD (create, read, update, delete) on tasks stored in a PostgreSQL database that runs in Docker. The whole stack (API and database) starts with one command.
 
-Built for the FlyRank Internship, Backend Track. Storage evolved in three steps without changing the endpoints: in-memory (A1), SQLite (A2), containerized Postgres (A3).
-
+Built for the FlyRank Internship, Backend Track.
 ## Requirements
 
 - Docker Desktop (or Docker Engine with the Compose plugin)

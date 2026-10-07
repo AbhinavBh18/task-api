@@ -2,6 +2,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from supabase import AuthApiError
 from supabase_client import supabase
+from fastapi import APIRouter, HTTPException, Depends, Response
+from auth import get_current_user
+
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -54,3 +57,15 @@ def login(body: Credentials):
         "token_type": "bearer",
         "expires_in": session.expires_in,
     }
+
+
+@router.post(
+    "/logout",
+    status_code=204,
+    summary="Log out",
+    description="Ends the session. Requires a valid access token.",
+    responses={401: {"description": "Access token missing, invalid or expired"}},
+)
+def logout(user=Depends(get_current_user)):
+    supabase.auth.sign_out()
+    return Response(status_code=204)

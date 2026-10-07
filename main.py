@@ -8,6 +8,8 @@ from auth_routes import router as auth_router
 from fastapi import FastAPI, Response, Header, HTTPException
 from supabase import AuthApiError
 from supabase_client import supabase
+from fastapi import FastAPI, Response, Depends
+from auth import get_current_user
 
 init_db()
 app = FastAPI(
@@ -68,28 +70,30 @@ def public_info():
 
 
 
-def profile(authorization: str | None = Header(default=None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Access token required")
-
-    token = authorization[len("Bearer "):].strip()
-    if not token:
-        raise HTTPException(status_code=401, detail="Access token required")
-
-    try:
-        res = supabase.auth.get_user(token)
-    except AuthApiError:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-    if res is None or res.user is None:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-    user = res.user
+@app.get(
+    "/protected/profile",
+    tags=["protected"],
+    summary="Your profile (token required)",
+    description="Returns the logged-in user's id, email and signup date.",
+    responses={401: {"description": "Access token missing, invalid or expired"}},
+)
+def profile(user=Depends(get_current_user)):
     return {
         "id": user.id,
         "email": user.email,
         "created_at": user.created_at,
     }
+
+
+@app.get(
+    "/protected/dashboard",
+    tags=["protected"],
+    summary="Dashboard (token required)",
+    description="A second protected route, guarded by the same dependency.",
+    responses={401: {"description": "Access token missing, invalid or expired"}},
+)
+def dashboard(user=Depends(get_current_user)):
+    return {"message": f"Welcome back, {user.email}"}
 
 
 

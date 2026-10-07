@@ -6,3 +6,4 @@ __pycache__/
 *.db
 body.json
 check_supabase.py
+check_db.py

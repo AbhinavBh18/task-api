@@ -2,6 +2,8 @@ from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from db import init_db, get_all_tasks, get_task_by_id, insert_task, update_task_row, delete_task_row
+import supabase_client
+
 
 init_db()
 app = FastAPI(

@@ -3,7 +3,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from db import init_db, get_all_tasks, get_task_by_id, insert_task, update_task_row, delete_task_row
 import supabase_client
-
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from auth_routes import router as auth_router
 
 init_db()
 app = FastAPI(
@@ -11,7 +12,16 @@ app = FastAPI(
     description="A small to-do list API with full CRUD, stored in a SQLite database.",
     version="1.0",
 )
+app.include_router(auth_router)
 
+
+@app.exception_handler(StarletteHTTPException)
+async def http_error_handler(request, exc):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": exc.detail},
+        headers=exc.headers,
+    )
 class TaskCreate(BaseModel):
     title: str | None = None
 

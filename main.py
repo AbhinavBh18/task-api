@@ -6,6 +6,8 @@ import supabase_client
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from auth_routes import router as auth_router
 from fastapi import FastAPI, Response, Header, HTTPException
+from supabase import AuthApiError
+from supabase_client import supabase
 
 init_db()
 app = FastAPI(
@@ -61,8 +63,11 @@ def public_info():
     tags=["protected"],
     summary="Your profile (token required)",
     description="Requires an Authorization: Bearer <token> header.",
-    responses={401: {"description": "Access token required"}},
+    responses={401: {"description": "Access token missing, invalid or expired"}},
 )
+
+
+
 def profile(authorization: str | None = Header(default=None)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Access token required")
@@ -71,7 +76,20 @@ def profile(authorization: str | None = Header(default=None)):
     if not token:
         raise HTTPException(status_code=401, detail="Access token required")
 
-    return {"message": "A token was presented (not verified yet)"}
+    try:
+        res = supabase.auth.get_user(token)
+    except AuthApiError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    if res is None or res.user is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    user = res.user
+    return {
+        "id": user.id,
+        "email": user.email,
+        "created_at": user.created_at,
+    }
 
 
 

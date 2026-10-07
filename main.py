@@ -14,8 +14,8 @@ from auth import get_current_user
 init_db()
 app = FastAPI(
     title="Task API",
-    description="A small to-do list API with full CRUD, stored in a SQLite database.",
-    version="1.0",
+    description="A small to-do list API with full CRUD, stored in PostgreSQL, with Supabase Auth login and JWT-protected routes.",
+    version="1.1",
 )
 app.include_router(auth_router)
 

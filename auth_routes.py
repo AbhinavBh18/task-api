@@ -69,3 +69,17 @@ def login(body: Credentials):
 def logout(user=Depends(get_current_user)):
     supabase.auth.sign_out()
     return Response(status_code=204)
+
+
+
+
+
+class Credentials(BaseModel):
+    email: str | None = None
+    password: str | None = None
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{"email": "user@example.com", "password": "password123"}]
+        }
+    }

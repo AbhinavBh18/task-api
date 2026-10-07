@@ -40,6 +40,61 @@ Settings live in `.env` (git-ignored). `.env.example` lists every key:
 
 Inside Docker Compose, the API builds its own connection string from these values and reaches the database through the service name `db`. No credentials are hardcoded in the code or in `compose.yaml`.
 
+
+## Authentication
+
+The API uses **Supabase Auth** as its Identity Provider. Supabase stores the
+accounts, hashes passwords and signs JSON Web Tokens (JWTs); this API never
+stores a password. Protected routes verify the caller's token with Supabase
+before running.
+
+### Supabase setup
+
+1. Create a free project at supabase.com.
+2. Copy the **Project URL** and the **anon** key from Project Settings → API
+   (never use the `service_role` key).
+3. Turn **Confirm email** off under Authentication → Sign In / Providers → Email
+   (practice project only).
+4. Put both values in `.env` (see `.env.example`).
+
+### Auth endpoints
+
+| Method | Path | Description | Auth needed | Success | Errors |
+|--------|------|-------------|-------------|---------|--------|
+| POST | `/auth/signup` | Create an account | No | 201 | 400 |
+| POST | `/auth/login` | Log in, returns access + refresh token | No | 200 | 400, 401 |
+| POST | `/auth/logout` | End the session | Bearer token | 204 | 401 |
+| GET | `/public/info` | Public message | No | 200 | |
+| GET | `/protected/profile` | Current user's id, email, signup date | Bearer token | 200 | 401 |
+| GET | `/protected/dashboard` | Second protected route (same guard) | Bearer token | 200 | 401 |
+
+Send the token as `Authorization: Bearer <access_token>`.
+
+### How it works
+
+A single FastAPI dependency (`get_current_user` in `auth.py`) reads the bearer
+token and asks Supabase to verify it. Any route that declares
+`Depends(get_current_user)` is protected, with no auth code repeated. Missing,
+malformed, expired or tampered tokens all return `401` with a JSON error.
+
+### Swagger UI
+
+Open `/docs`, log in via `POST /auth/login`, click **Authorize**, paste the
+access token (without the word `Bearer`), then use **Try it out** on any
+protected route.
+
+![Swagger with bearer auth](docs/swagger-auth.png)
+
+### Notes
+
+- Logout calls Supabase's sign-out, but a JWT is stateless: an already-issued
+  access token stays valid until it expires (about an hour). This is the
+  tradeoff behind short-lived access tokens and refresh tokens.
+- The `/tasks` routes from earlier assignments are not protected yet.
+
+
+
+
 ## Endpoints
 
 | Method | Path | Description | Success | Errors |

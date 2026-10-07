@@ -5,6 +5,7 @@ from db import init_db, get_all_tasks, get_task_by_id, insert_task, update_task_
 import supabase_client
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from auth_routes import router as auth_router
+from fastapi import FastAPI, Response, Header, HTTPException
 
 init_db()
 app = FastAPI(
@@ -43,6 +44,36 @@ def read_root():
 @app.get("/health", summary="Health check", description="Returns ok if the server is alive.")
 def health_check():
     return {"status": "ok"}
+
+
+@app.get(
+    "/public/info",
+    tags=["public"],
+    summary="Public info",
+    description="Open to everyone. No token needed.",
+)
+def public_info():
+    return {"message": "Welcome stranger! This info is public."}
+
+
+@app.get(
+    "/protected/profile",
+    tags=["protected"],
+    summary="Your profile (token required)",
+    description="Requires an Authorization: Bearer <token> header.",
+    responses={401: {"description": "Access token required"}},
+)
+def profile(authorization: str | None = Header(default=None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Access token required")
+
+    token = authorization[len("Bearer "):].strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="Access token required")
+
+    return {"message": "A token was presented (not verified yet)"}
+
+
 
 
 @app.get("/tasks", summary="List all tasks", description="Returns every task in the database.")
